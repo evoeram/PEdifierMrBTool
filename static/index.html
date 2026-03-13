@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edifier MR — BLE Control</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔊</text></svg>">
+</head>
+<body>
+    <div id="app">
+
+        <!-- ═══ Header ═══ -->
+        <header>
+            <div class="logo">
+                <span class="logo-icon">🔊</span>
+                <h1>Edifier MR<span class="model-badge" id="modelBadge">—</span></h1>
+            </div>
+            <div class="connection-status" id="connStatus">
+                <span class="dot" id="connDot"></span>
+                <span id="connLabel">Disconnected</span>
+            </div>
+        </header>
+
+        <!-- ═══ Connection Panel ═══ -->
+        <section id="connectPanel" class="panel connect-panel">
+            <h2>Connect to Speaker</h2>
+            <div class="connect-row">
+                <input type="text" id="bleAddress" placeholder="XX:XX:XX:XX:XX:XX"
+                       spellcheck="false" autocomplete="off">
+                <button id="btnConnect" class="btn btn-primary">Connect</button>
+                <button id="btnScan" class="btn btn-secondary">Scan</button>
+            </div>
+            <div id="scanResults" class="scan-results hidden"></div>
+        </section>
+
+        <!-- ═══ Main Content (hidden until connected) ═══ -->
+        <main id="mainContent" class="hidden">
+
+            <!-- ─── Tabs ─── -->
+            <nav class="tabs">
+                <button class="tab active" data-tab="eq">🎛️ Equalizer</button>
+                <button class="tab" data-tab="volume">🔊 Volume</button>
+                <button class="tab" data-tab="presets">💾 Presets</button>
+                <button class="tab" data-tab="advanced">⚙️ Advanced</button>
+                <button class="tab" data-tab="info">ℹ️ Info</button>
+            </nav>
+
+            <!-- ─── EQ Tab ─── -->
+            <section id="tab-eq" class="tab-content active">
+                <div class="eq-section">
+                    <div class="eq-toolbar">
+                        <button id="btnFlat" class="btn btn-sm">Flat</button>
+                        <button id="btnResetEQ" class="btn btn-sm">Reset</button>
+                        <button id="btnRefreshEQ" class="btn btn-sm">Refresh</button>
+                    </div>
+
+                    <!-- Canvas EQ визуализация -->
+                    <div class="eq-canvas-wrap">
+                        <canvas id="eqCanvas" width="800" height="300"></canvas>
+                    </div>
+
+                    <!-- Слайдеры EQ -->
+                    <div id="eqSliders" class="eq-sliders"></div>
+                </div>
+            </section>
+
+            <!-- ─── Volume Tab ─── -->
+            <section id="tab-volume" class="tab-content">
+                <div class="volume-section">
+                    <div class="volume-display">
+                        <span class="volume-value" id="volValue">0</span>
+                        <span class="volume-max" id="volMax">/ 30</span>
+                        <span class="volume-percent" id="volPercent">0%</span>
+                    </div>
+                    <input type="range" id="volSlider" min="0" max="30"
+                           value="0" class="volume-slider">
+                    <div class="volume-buttons">
+                        <button id="btnVolDown5" class="btn btn-sm">−5</button>
+                        <button id="btnVolDown" class="btn btn-sm">−1</button>
+                        <button id="btnMute" class="btn btn-sm btn-danger">Mute</button>
+                        <button id="btnVolUp" class="btn btn-sm">+1</button>
+                        <button id="btnVolUp5" class="btn btn-sm">+5</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─── Presets Tab ─── -->
+            <section id="tab-presets" class="tab-content">
+                <div class="presets-section">
+                    <div class="preset-save-row">
+                        <input type="text" id="presetName" placeholder="Preset name...">
+                        <button id="btnSavePreset" class="btn btn-primary btn-sm">Save Current</button>
+                    </div>
+                    <div class="presets-grid" id="presetsGrid"></div>
+                </div>
+            </section>
+
+            <!-- ─── Advanced Tab ─── -->
+            <section id="tab-advanced" class="tab-content">
+                <div class="advanced-section">
+
+                    <!-- Low Cut -->
+                    <div class="setting-group" id="groupLowCut">
+                        <h3>Low Cut Filter</h3>
+                        <div class="setting-row">
+                            <label>Frequency (Hz):</label>
+                            <input type="number" id="lowCutFreq" min="20"
+                                   max="500" value="60" class="input-sm">
+                        </div>
+                        <div class="setting-row">
+                            <label>Slope (dB/oct):</label>
+                            <select id="lowCutSlope" class="input-sm">
+                                <option value="6">6</option>
+                                <option value="12">12</option>
+                                <option value="18">18</option>
+                                <option value="24" selected>24</option>
+                            </select>
+                        </div>
+                        <button id="btnSetLowCut" class="btn btn-sm btn-primary">Apply</button>
+                    </div>
+
+                    <!-- Acoustic Space -->
+                    <div class="setting-group" id="groupSpace">
+                        <h3>Acoustic Space</h3>
+                        <div class="space-buttons">
+                            <button class="btn btn-sm space-btn" data-space="0">0 dB</button>
+                            <button class="btn btn-sm space-btn" data-space="2">−2 dB</button>
+                            <button class="btn btn-sm space-btn" data-space="4">−4 dB</button>
+                            <button class="btn btn-sm space-btn" data-space="6">−6 dB</button>
+                        </div>
+                    </div>
+
+                    <!-- Desktop Mode -->
+                    <div class="setting-group" id="groupDesktop">
+                        <h3>Desktop Mode</h3>
+                        <label class="toggle">
+                            <input type="checkbox" id="desktopToggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label" id="desktopLabel">Off</span>
+                        </label>
+                    </div>
+
+                    <!-- Active Speaker -->
+                    <div class="setting-group" id="groupSpeaker">
+                        <h3>Active Speaker</h3>
+                        <div class="speaker-buttons">
+                            <button class="btn btn-sm speaker-btn" data-side="left">
+                                ◀ Left
+                            </button>
+                            <button class="btn btn-sm speaker-btn" data-side="right">
+                                Right ▶
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- LDAC -->
+                    <div class="setting-group" id="groupLdac">
+                        <h3>LDAC Mode</h3>
+                        <div class="ldac-buttons">
+                            <button class="btn btn-sm ldac-btn" data-mode="off">Off</button>
+                            <button class="btn btn-sm ldac-btn" data-mode="48k">48k</button>
+                            <button class="btn btn-sm ldac-btn" data-mode="96k">96k</button>
+                        </div>
+                    </div>
+
+                    <!-- Prompt Tone -->
+                    <div class="setting-group">
+                        <h3>Prompt Tones</h3>
+                        <label class="toggle">
+                            <input type="checkbox" id="promptToggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label" id="promptLabel">On</span>
+                        </label>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="setting-group danger-zone">
+                        <h3>⚠️ System</h3>
+                        <button id="btnShutdown" class="btn btn-danger">
+                            Power Off Speaker
+                        </button>
+                        <button id="btnDisconnect" class="btn btn-secondary">
+                            Disconnect BLE
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- ─── Info Tab ─── -->
+            <section id="tab-info" class="tab-content">
+                <div class="info-section">
+                    <table class="info-table" id="infoTable">
+                        <tbody></tbody>
+                    </table>
+                    <button id="btnRefreshInfo" class="btn btn-sm btn-secondary">
+                        Refresh
+                    </button>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- ═══ Toast ═══ -->
+        <div id="toastContainer" class="toast-container"></div>
+
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
