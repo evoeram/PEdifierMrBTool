@@ -76,5 +76,3 @@ docker run --rm -p 8000:8000 pedifier-mr-tool
 - Oversized WebSocket messages are rejected.
 - Invalid JSON and malformed command payloads return explicit errors.
 
-## Release
-See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
