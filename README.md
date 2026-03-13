@@ -14,7 +14,7 @@ Production-ready BLE control server and web UI for Edifier MR-series speakers (M
 - `server.py`: FastAPI app, WebSocket command handling, input validation, broadcasting.
 - `app_config.py`: environment-based runtime configuration.
 - `static/`: browser UI assets.
-- `tests/`: baseline unit/API regression tests.
+
 
 ## Installation
 ```bash
@@ -24,9 +24,6 @@ pip install -r requirements.txt
 ```
 
 ## Run locally
-```bash
-make run
-```
 
 Custom host/port/BLE address:
 ```bash
@@ -43,22 +40,6 @@ Environment variables (with defaults):
 - `EDIFIER_SCAN_TIMEOUT_SECONDS=8.0`
 - `EDIFIER_WS_MAX_MESSAGE_SIZE=16384`
 - `EDIFIER_VOLUME_MIN_INTERVAL_SECONDS=0.35`
-
-## Developer workflow
-```bash
-make install
-make format
-make lint
-make typecheck
-make test
-make check
-```
-
-## Docker
-```bash
-docker build -t pedifier-mr-tool .
-docker run --rm -p 8000:8000 pedifier-mr-tool
-```
 
 ## Supported devices / capabilities
 - MR5BT: full feature set (9-band EQ, LDAC, active speaker, advanced audio).
